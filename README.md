@@ -13,7 +13,7 @@ Ensure you have the following installed on your local machine:
 
 ### Installation
 
-Follow the steps below to set up the project locally:
+This Project uses **NPM**. Follow the steps below to set up the project locally:
 
 1. **Clone the repository:**
 
