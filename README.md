@@ -30,13 +30,42 @@ Follow the steps below to set up the project locally:
 
 3. **Set up the environment variables:**
 
-   Create a `.env` file in the root directory of the project and add the following environment variables:
+   ~Create a `.env` file in the root directory of the project and add the following environment variables:~
 
    ```env
    VITE_API_URL=http://localhost:3000
    ```
 
-4. **Start the development server:**
+   **ADDED Sep. 02:** Due to backend CORS issue, you should set .env like this:
+
+   ```env
+   VITE_API_URL=/api
+   ```
+
+   then set vite.config.ts like this (already configured in the repo):
+
+   ```ts
+   import { defineConfig } from "vite";
+   import react from "@vitejs/plugin-react-swc";
+   
+   // https://vitejs.dev/config/
+   export default defineConfig({
+     plugins: [react()],
+     server: {
+       proxy: {
+         "/api": {
+           target: "https://api.2024.newbies.gistory.me",
+           changeOrigin: true,
+           rewrite: (path) => path.replace(/^\/api/, ""),
+         },
+       },
+     },
+   });
+
+   ```
+   
+
+5. **Start the development server:**
 
    ```bash
    npm run dev
