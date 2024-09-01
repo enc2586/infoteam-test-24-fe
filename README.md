@@ -46,7 +46,9 @@ The application should now be running on [http://localhost:5173](http://localhos
 
 ## Backend
 
-To run the backend of this application, please refer to the [backend repository](https://github.com/enc2586/infoteam-test-24-be).
+The backend is served on [GIST Infoteam server](https://api.2024.newbies.gistory.me).
+
+For API docs, please refer to the [OpenAPI Documentation](https://api.2024.newbies.gistory.me/swagger-ui/index.html#/).
 
 # Technologies Used
 
