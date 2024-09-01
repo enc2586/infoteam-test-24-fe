@@ -53,7 +53,7 @@ For API docs, please refer to the [OpenAPI Documentation](https://api.2024.newbi
 # Technologies Used
 
 - **Page lazy loading**: Implemented lazy loading to each routes to improve performance.
-- **Korean Deep Search (only client side)**: When searching for tags, etc. (client-side), apply es-toolkit for Korean deep search (ex. query=붉 => '불금' 검색 가능)
+- **Korean Deep Search (only client side)**: When searching for tags, etc. (client-side), applied es-toolkit for Korean deep search (ex. query=붉 => '불금' 검색 가능)
 
 # Notes
 
