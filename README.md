@@ -13,7 +13,7 @@ Ensure you have the following installed on your local machine:
 
 ### Installation
 
-Follow the steps below to set up the project locally:
+This Project uses **NPM**. Follow the steps below to set up the project locally:
 
 1. **Clone the repository:**
 
@@ -30,13 +30,42 @@ Follow the steps below to set up the project locally:
 
 3. **Set up the environment variables:**
 
-   Create a `.env` file in the root directory of the project and add the following environment variables:
+   ~Create a `.env` file in the root directory of the project and add the following environment variables:~
 
    ```env
    VITE_API_URL=http://localhost:3000
    ```
 
-4. **Start the development server:**
+   **ADDED Sep. 02:** Due to backend CORS issue, you should set .env like this:
+
+   ```env
+   VITE_API_URL=/api
+   ```
+
+   then set vite.config.ts like this (already configured in the repo):
+
+   ```ts
+   import { defineConfig } from "vite";
+   import react from "@vitejs/plugin-react-swc";
+   
+   // https://vitejs.dev/config/
+   export default defineConfig({
+     plugins: [react()],
+     server: {
+       proxy: {
+         "/api": {
+           target: "https://api.2024.newbies.gistory.me",
+           changeOrigin: true,
+           rewrite: (path) => path.replace(/^\/api/, ""),
+         },
+       },
+     },
+   });
+
+   ```
+   
+
+5. **Start the development server:**
 
    ```bash
    npm run dev
@@ -46,12 +75,14 @@ The application should now be running on [http://localhost:5173](http://localhos
 
 ## Backend
 
-To run the backend of this application, please refer to the [backend repository](https://github.com/enc2586/infoteam-test-24-be).
+The backend is served on [GIST Infoteam server](https://api.2024.newbies.gistory.me).
+
+For API docs, please refer to the [OpenAPI Documentation](https://api.2024.newbies.gistory.me/swagger-ui/index.html#/).
 
 # Technologies Used
 
 - **Page lazy loading**: Implemented lazy loading to each routes to improve performance.
-- **Korean Deep Search (only client side)**: When searching for tags, etc. (client-side), apply es-toolkit for Korean deep search (ex. query=붉 => '불금' 검색 가능)
+- **Korean Deep Search (only client side)**: When searching for tags, etc. (client-side), applied es-toolkit for Korean deep search (ex. query=붉 => '불금' 검색 가능)
 
 # Notes
 
