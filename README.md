@@ -33,7 +33,7 @@ This Project uses **NPM**. Follow the steps below to set up the project locally:
    ~Create a `.env` file in the root directory of the project and add the following environment variables:~
 
    ```env
-   VITE_API_URL=http://localhost:3000
+   VITE_API_URL=https://api.2024.newbies.gistory.me/
    ```
 
    **ADDED Sep. 02:** Due to backend CORS issue, you should set .env like this:
