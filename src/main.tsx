@@ -39,6 +39,10 @@ export const router = createBrowserRouter([
             path: "write",
             lazy: () => import("./pages/Write"),
           },
+          {
+            path: "edit",
+            lazy: () => import("./pages/Edit"),
+          },
         ],
       },
       {

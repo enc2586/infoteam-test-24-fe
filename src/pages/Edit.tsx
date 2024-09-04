@@ -1,19 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import { Select } from "antd";
-import { useRef, useState } from "react";
+import { Row, UploadFile, Image, Space, Alert } from "antd";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { getBoardList } from "../apis/board/get-board-list";
-import { postImage } from "../apis/post/create-image";
-import { createPost, CreatePostInputs } from "../apis/post/create-post";
+import { getPost } from "../apis/post/get-post";
+import { patchPost, PatchPostInputs } from "../apis/post/patch-post";
 import { createTag } from "../apis/tag/create-tag";
 import { Button } from "../components/Button";
+import { FullScreenLoading } from "../components/FullScreenLoading";
 import { Input } from "../components/Input";
 import { TagsSelector } from "../components/TagsSelector";
 import { TextArea } from "../components/TextArea";
 import { useSearchParamsState } from "../hooks/useSearchParamsState";
+import { deleteImage } from "../apis/post/delete-image";
+import { postImage } from "../apis/post/create-image";
 
 const FormContainer = styled.div`
   padding: 20px;
@@ -23,97 +25,95 @@ const FormContainer = styled.div`
   align-items: center;
 `;
 
-type Inputs = Omit<CreatePostInputs, "tags">;
+type Inputs = Omit<PatchPostInputs["post"], "tags">;
 
 export function Component() {
   const navigate = useNavigate();
 
-  const [boardId] = useSearchParamsState("boardId", "", (v) =>
-    v === "" ? undefined : v
-  );
+  const [postId] = useSearchParamsState("postId", "");
+
+  const { data, refetch } = useQuery({
+    queryKey: ["post", postId],
+    queryFn: async () => getPost({ postId: postId }),
+    enabled: !!postId,
+  });
+
   const {
     register,
+    reset,
     handleSubmit,
-    setError,
-    setValue,
     formState: { errors, isSubmitting },
-  } = useForm<Inputs>({
-    defaultValues: {
-      boardId: boardId,
-    },
-  });
+  } = useForm<Inputs>();
+
+  useEffect(() => {
+    if (data) {
+      const { title, body, tags } = data;
+      setTags(tags);
+      reset({ title, body });
+    }
+  }, [data]);
 
   const formRef = useRef<HTMLFormElement>(null);
 
   const [tags, setTags] = useState<string[]>([]);
 
-  const { data: boards } = useQuery({
-    queryKey: ["boards"],
-    queryFn: async () => (await getBoardList()).list,
-  });
-
-  const onSubmit = async ({ boardId, title, body }: Inputs) => {
-    if (!boardId) {
-      setError("boardId", { message: "게시판을 선택해주세요" });
-      return;
-    }
-
+  const onSubmit = async ({ title, body }: Inputs) => {
     try {
       if (tags.length > 0) {
         toast.loading("태그 먼저 보내는 중", { id: "loading" });
 
         const requests = tags.map((tag) => createTag({ key: tag }));
-
         await Promise.allSettled(requests);
       }
 
       toast.loading("글쓰는 중", { id: "loading" });
 
-      const { id } = await createPost({
-        boardId,
-        title,
-        body,
-        tags,
+      const { id } = await patchPost({
+        postId,
+        post: {
+          title,
+          body,
+          tags,
+        },
       });
 
-      if (fileList.length > 0) {
-        toast.loading("사진 올리는 중", { id: "loading" });
-
-        const requests = fileList.map((file) => {
-          postImage({ postId: id, image: file });
-          console.log("Uploaded file:", file);
-        });
-
-        await Promise.all(requests);
-      }
-
-      toast.success("글이 작성되었습니다", { id: "loading" });
-      navigate(`/board?boardId=${boardId}`);
+      toast.success("글이 수정되었습니다", { id: "loading" });
+      navigate(`/post?postId=${id}`);
     } catch (_) {
-      toast.error("글 작성에 실패했습니다", { id: "loading" });
+      toast.error("글 수정에 실패했습니다", { id: "loading" });
     }
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [fileList, setFileList] = useState<File[]>([]);
   const handleButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (file) {
       console.log("Selected file:", file);
-      setFileList([...fileList, file]);
+      await toast.promise(postImage({ postId, image: file }), {
+        loading: "이미지 업로드 중...",
+        success: "이미지를 업로드했습니다",
+        error: "이미지 업로드에 실패했습니다",
+      });
+      refetch();
     }
   };
 
+  if (!data) {
+    return <FullScreenLoading />;
+  }
+
   return (
     <FormContainer>
-      <h1>새로운 글</h1>
+      <h1>글 수정</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} ref={formRef}>
         <div
@@ -125,23 +125,6 @@ export function Component() {
             marginTop: "20px",
           }}
         >
-          <div>
-            <Select
-              options={boards?.map(({ id, title }) => ({
-                label: title,
-                value: id,
-              }))}
-              placeholder="게시판 선택"
-              style={{ width: "100%" }}
-              size="large"
-              defaultValue={boardId}
-              onChange={(value) => {
-                setValue("boardId", value);
-              }}
-            />
-            {errors.boardId && <p>{errors.boardId.message}</p>}
-          </div>
-
           <div>
             <Input
               placeholder="제목"
@@ -176,9 +159,39 @@ export function Component() {
       >
         <TagsSelector value={tags} setValue={setTags} />
 
+        <Row>
+          {data.images.map(({ image, id }) => (
+            <Image
+              src={`data:image/png;base64,${image}`}
+              height={150}
+              preview={{
+                toolbarRender: () => (
+                  <Space size={12} className="toolbar-wrapper">
+                    <Button
+                      onClick={async () => {
+                        await toast.promise(
+                          deleteImage({ postId, imageId: id }),
+                          {
+                            loading: "이미지 삭제 중...",
+                            success: "이미지를 삭제했습니다",
+                            error: "이미지 삭제에 실패했습니다",
+                          }
+                        );
+                        refetch();
+                      }}
+                    >
+                      삭제
+                    </Button>
+                  </Space>
+                ),
+              }}
+            />
+          ))}
+        </Row>
+
         <div>
           <button type="button" onClick={handleButtonClick}>
-            이미지 추가 ({fileList.length}개)
+            이미지 추가
           </button>
           <input
             type="file"
@@ -188,6 +201,8 @@ export function Component() {
             onChange={handleFileChange}
           />
         </div>
+
+        <Alert message="이미지 추가/삭제는 즉시 반영됩니다." />
 
         <Button
           style={{ marginTop: "20px" }}

@@ -2,10 +2,25 @@ import { useQuery } from "@tanstack/react-query";
 import { getPost } from "../apis/post/get-post";
 import { useSearchParamsState } from "../hooks/useSearchParamsState";
 import { FullScreenLoading } from "../components/FullScreenLoading";
-import { Descriptions } from "antd";
-import { Link } from "react-router-dom";
+import {
+  Button,
+  Descriptions,
+  Image,
+  Popconfirm,
+  Popover,
+  Row,
+  Typography,
+} from "antd";
+import { Link, useNavigate } from "react-router-dom";
+import { Tag } from "../components/Tag";
+import useAuth from "../hooks/useAuth";
+import { deletePost } from "../apis/post/delete-post";
+import toast from "react-hot-toast";
+import { deleteImage } from "../apis/post/delete-image";
 
 export function Component() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [postId, setPostId] = useSearchParamsState<string>("postId", "", (v) =>
     v === "" ? "" : v
   );
@@ -25,8 +40,9 @@ export function Component() {
     title,
     body,
     tags,
+    images,
     createdAt,
-    createdBy: { nickname, id },
+    createdBy: { nickname, email },
   } = post;
 
   return (
@@ -67,20 +83,12 @@ export function Component() {
               children: boardTitle,
             },
             {
-              key: 3,
+              key: 4,
               label: "태그",
               children: tags.length ? (
                 tags
                   .sort((a, b) => a.localeCompare(b))
-                  .map((i) => (
-                    <Link
-                      to={`/board?tag=${i}`}
-                      key={i}
-                      style={{ marginRight: "5px" }}
-                    >
-                      #{i}
-                    </Link>
-                  ))
+                  .map((i) => <Tag name={i} />)
               ) : (
                 <span
                   style={{
@@ -89,6 +97,63 @@ export function Component() {
                 >
                   <i>없음</i>
                 </span>
+              ),
+            },
+            {
+              key: 5,
+              label: "관리",
+              children: (
+                <Row>
+                  <Button
+                    size="small"
+                    onClick={() => navigate(`/board`)}
+                    style={{
+                      marginRight: "5px",
+                    }}
+                  >
+                    목록으로
+                  </Button>
+                  {user?.sub === email && (
+                    <>
+                      <Button
+                        size="small"
+                        onClick={() => navigate(`/edit?postId=${postId}`)}
+                        style={{
+                          marginRight: "5px",
+                        }}
+                      >
+                        수정
+                      </Button>
+                      <Popconfirm
+                        title="정말 삭제하시겠습니까?"
+                        onConfirm={async () => {
+                          try {
+                            toast.loading("삭제 중", { id: "loading" });
+                            const imagesPromises = images.map(({ id }) =>
+                              deleteImage({ postId, imageId: id })
+                            );
+                            await Promise.all(imagesPromises);
+                            await deletePost({ postId });
+                            toast.success("삭제 완료", { id: "loading" });
+                            navigate(`/board`);
+                          } catch (_) {
+                            toast.error("삭제 실패", { id: "loading" });
+                          }
+                        }}
+                      >
+                        <Button
+                          size="small"
+                          danger
+                          style={{
+                            marginRight: "5px",
+                          }}
+                        >
+                          삭제
+                        </Button>
+                      </Popconfirm>
+                    </>
+                  )}
+                </Row>
               ),
             },
           ]}
@@ -104,6 +169,17 @@ export function Component() {
         >
           {body}
         </p>
+
+        <Row>
+          {images.map(({ image }) => (
+            <Image
+              src={`data:image/png;base64,${image}`}
+              style={{
+                height: "200px",
+              }}
+            />
+          ))}
+        </Row>
       </div>
     </div>
   );

@@ -3,9 +3,9 @@ import { CreatePostInputs } from "./create-post";
 import { PostType, RawPostType } from "./types";
 import { transformRawPost } from "./utils";
 
-type PatchPostInputs = {
+export type PatchPostInputs = {
   postId: PostType["id"];
-  post: CreatePostInputs;
+  post: Omit<CreatePostInputs, "boardId">;
 };
 
 export const patchPost = async ({ postId, post }: PatchPostInputs) => {

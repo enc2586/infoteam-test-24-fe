@@ -6,7 +6,7 @@ type DeleteImageInputs = {
 };
 
 export const deleteImage = async ({ postId, imageId }: DeleteImageInputs) => {
-  await axios.delete(`/posts/${postId}/images/${imageId}`);
+  await axios.delete(`/posts/${postId}/image/${imageId}`);
 
   return;
 };
